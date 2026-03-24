@@ -1,0 +1,1534 @@
+<!doctype html>
+<html lang="zh-TW" style="height: 100%;">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>醫院教學情境 - 藥師對話模擬</title>
+  <script src="/_sdk/element_sdk.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      height: 100%;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    }
+
+    .app-container {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      color: #fff;
+    }
+
+    /* 頂部標題 */
+    .header {
+      background: rgba(30, 30, 50, 0.95);
+      padding: 20px;
+      border-bottom: 3px solid #667eea;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+      flex-shrink: 0;
+    }
+
+    .header h1 {
+      font-size: 24px;
+      color: #667eea;
+      margin-bottom: 8px;
+    }
+
+    .header p {
+      font-size: 13px;
+      color: #aaa;
+      margin-bottom: 10px;
+    }
+
+    .clinical-background {
+      font-size: 14px;
+      color: #ddd;
+      line-height: 1.6;
+      padding: 14px;
+      background: rgba(102, 126, 234, 0.1);
+      border-radius: 6px;
+      border-left: 4px solid #667eea;
+    }
+
+    /* 主內容區域 */
+    .main-content {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      padding: 20px;
+      flex: 1;
+    }
+
+    /* 左側：病床場景 */
+    .left-column {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* 病床場景 */
+    .bed-section {
+      background: rgba(30, 30, 50, 0.8);
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    .bed-title {
+      font-size: 16px;
+      font-weight: bold;
+      color: #667eea;
+      text-align: center;
+    }
+
+    /* 病床SVG容器 */
+    .bed-visualization {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 120px;
+      position: relative;
+    }
+
+    .instruction-hint {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: rgba(102, 126, 234, 0.1);
+      border-left: 4px solid #667eea;
+      padding: 10px 12px;
+      border-radius: 4px;
+      font-size: 12px;
+      color: #667eea;
+      font-weight: 600;
+      max-width: 120px;
+    }
+
+    .bed-svg {
+      width: 100%;
+      max-width: 300px;
+      height: auto;
+    }
+
+    /* 人物角色（醫師、照顧者） */
+    .character-container {
+      display: flex;
+      gap: 15px;
+      justify-content: center;
+    }
+
+    .character {
+      text-align: center;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+      padding: 12px;
+      border-radius: 8px;
+      border: 2px solid transparent;
+      flex: 1;
+    }
+
+    .character:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    }
+
+    .character.active {
+      background: rgba(102, 126, 234, 0.15);
+      border-color: #667eea;
+    }
+
+    .character-icon {
+      font-size: 36px;
+      margin-bottom: 6px;
+    }
+
+    .character-name {
+      font-weight: bold;
+      color: #fff;
+      margin-bottom: 2px;
+      font-size: 14px;
+    }
+
+    .character-role {
+      font-size: 11px;
+      color: #888;
+    }
+
+    /* 對話區域 */
+    .dialogue-section {
+      background: rgba(30, 30, 50, 0.8);
+      border-radius: 12px;
+      padding: 15px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      min-height: 250px;
+    }
+
+    .dialogue-title {
+      font-size: 14px;
+      font-weight: bold;
+      color: #667eea;
+      margin-bottom: 8px;
+    }
+
+    #dialogue-log {
+      flex: 1;
+      overflow-y: auto;
+      margin-bottom: 12px;
+      min-height: 100px;
+    }
+
+    .dialogue-box {
+      background: rgba(102, 126, 234, 0.1);
+      padding: 10px;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      border-left: 3px solid #667eea;
+    }
+
+    .dialogue-speaker {
+      font-weight: bold;
+      color: #667eea;
+      font-size: 12px;
+      margin-bottom: 4px;
+    }
+
+    .dialogue-text {
+      color: #ddd;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    /* 回應選項 */
+    .response-options {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .response-btn {
+      background: #667eea;
+      color: white;
+      border: none;
+      padding: 12px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      text-align: left;
+      transition: all 0.2s;
+    }
+
+    .response-btn:hover {
+      background: #764ba2;
+      transform: translateX(3px);
+    }
+
+    .response-btn:active {
+      transform: translateX(3px) scale(0.98);
+    }
+
+    /* 右側：資訊面板 */
+    .info-section {
+      background: rgba(30, 30, 50, 0.8);
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      overflow-y: auto;
+      max-height: 100%;
+    }
+
+    .info-title {
+      font-size: 14px;
+      font-weight: bold;
+      color: #667eea;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #444;
+      flex-shrink: 0;
+    }
+
+    .dropdown-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .dropdown-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: #aaa;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    select {
+      padding: 8px;
+      border: 2px solid #444;
+      border-radius: 6px;
+      font-size: 12px;
+      color: #ddd;
+      background: rgba(40, 40, 60, 0.8);
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+
+    select:hover {
+      border-color: #667eea;
+    }
+
+    select:focus {
+      outline: none;
+      border-color: #667eea;
+      background: rgba(40, 40, 60, 1);
+    }
+
+    #detail-display {
+      background: rgba(40, 40, 60, 0.8);
+      padding: 12px;
+      border-radius: 6px;
+      border-left: 3px solid #667eea;
+      font-size: 13px;
+      line-height: 1.6;
+      max-height: 150px;
+      overflow-y: auto;
+      color: #ddd;
+    }
+
+    #detail-display.empty-state {
+      background: rgba(40, 40, 60, 0.6);
+      border-left-color: #666;
+      color: #888;
+      text-align: center;
+      padding: 20px 12px;
+    }
+
+    /* Lab Values Table Styling */
+    .lab-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 11px;
+      background: rgba(40, 40, 60, 0.6);
+    }
+
+    .lab-table thead {
+      background: rgba(102, 126, 234, 0.15);
+      border-bottom: 2px solid #667eea;
+    }
+
+    .lab-table th {
+      padding: 8px 6px;
+      text-align: left;
+      font-weight: 600;
+      color: #ddd;
+    }
+
+    .lab-table td {
+      padding: 8px 6px;
+      border-bottom: 1px solid #444;
+    }
+
+    .lab-table tbody tr:hover {
+      background: rgba(102, 126, 234, 0.1);
+    }
+
+    .lab-table .test-name {
+      font-weight: 500;
+      color: #ddd;
+      min-width: 120px;
+    }
+
+    .lab-table .normal {
+      color: #ddd;
+    }
+
+    .lab-table .abnormal {
+      color: #ff9999;
+      font-weight: 600;
+    }
+
+    .lab-category {
+      font-weight: bold;
+      color: #667eea;
+      background: rgba(102, 126, 234, 0.1);
+      padding: 6px;
+      margin-top: 10px;
+      margin-bottom: 6px;
+      border-left: 3px solid #667eea;
+    }
+
+    /* 空狀態 */
+    .empty-state {
+      text-align: center;
+      color: #999;
+      padding: 20px;
+      font-size: 13px;
+    }
+
+    @media (max-width: 1200px) {
+      .main-content {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .main-content {
+        grid-template-columns: 1fr;
+        gap: 15px;
+        padding: 15px;
+      }
+
+      .header {
+        padding: 15px;
+      }
+
+      .header h1 {
+        font-size: 20px;
+      }
+
+      .clinical-background {
+        font-size: 11px;
+      }
+    }
+
+    /* 頁腳區域 */
+    .footer {
+      background: rgba(20, 20, 35, 0.95);
+      border-top: 2px solid #444;
+      padding: 20px;
+      margin-top: auto;
+      font-size: 11px;
+      color: #999;
+      line-height: 1.6;
+      flex-shrink: 0;
+    }
+
+    .footer-title {
+      font-weight: bold;
+      color: #667eea;
+      margin-bottom: 8px;
+      font-size: 12px;
+    }
+
+    .footer-content {
+      color: #aaa;
+    }
+
+    .footer-content a {
+      color: #667eea;
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .footer-content a:hover {
+      color: #764ba2;
+      text-decoration: underline;
+    }
+  </style>
+  <script src="https://cdn.tailwindcss.com/3.4.17" type="text/javascript"></script>
+  <style>body { box-sizing: border-box; }</style>
+  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
+ </head>
+ <body>
+  <div class="app-container"><!-- 頂部標題 -->
+   <div class="header">
+    <h1>🏥 <strong>藥事照護案例 - 吞嚥與咀嚼困難病人(鼻胃管)(譫妄)</strong></h1>
+    <p>Altered consciousness with dysphagia and NG tube</p>
+    <p style="font-size: 12px; color: #999; margin-bottom: 10px;">教案設計者: 崇鈺老師研究室團隊 (Shao-Yuan Hao)</p>
+    <div class="clinical-background"><strong>📝 Clinical Background:</strong><br>
+      A 94-year-old female with a medical history of hypertension, diabetes, dementia, chronic kidney disease (CKD), renal calculi, and anxiety/panic disorder. Admitted on Jan 29 due to fever, dysuria, and hematuria (diagnosed as UTI). The patient is bedridden with impaired consciousness and an indwelling nasogastric (NG) tube for enteral nutrition and medication. On Feb 2, her consciousness partially improved; however, she exhibited agitation (shouting and flailing limbs), leading to a suspected diagnosis of delirium. The physician requested a pharmacist's consultation for appropriate pharmacological intervention for mood stabilization and an assessment of the suitability of the new prescriptions for NG tube administration. During a pharmacy ward round, it was discovered that the family had been administering unauthorized traditional Chinese medicine (TCM) decoctions via the NG tube for "calming purposes" without informing the medical team.
+    </div>
+   </div><!-- 主內容區域 -->
+   <div class="main-content"><!-- 左側：病床場景 + 對話 -->
+    <div class="left-column"><!-- 病床場景 -->
+     <div class="bed-section">
+      <div class="bed-title">
+       Bed Scene
+      </div>
+      <div class="bed-visualization">
+       <div class="instruction-hint">
+        👉 Please click Doctor to start dialogue
+       </div>
+       <svg class="bed-svg" viewbox="0 0 500 320" xmlns="http://www.w3.org/2000/svg">
+        <!-- 床架底座 --> <rect x="40" y="200" width="420" height="8" fill="#5a5a5a" rx="2" /> <!-- 床架腿部 --> <rect x="60" y="208" width="6" height="80" fill="#4a4a4a" /> <rect x="434" y="208" width="6" height="80" fill="#4a4a4a" /> <rect x="200" y="208" width="5" height="80" fill="#4a4a4a" /> <rect x="295" y="208" width="5" height="80" fill="#4a4a4a" /> <!-- 床架邊框 --> <rect x="50" y="140" width="400" height="70" fill="none" stroke="#6b7280" stroke-width="3" rx="4" /> <!-- 床墊 - 分段設計 --> <rect x="55" y="145" width="390" height="25" fill="#e8d5c4" stroke="#d4c4b0" stroke-width="1" /> <rect x="55" y="170" width="390" height="35" fill="#d4c4b0" stroke="#c4b4a0" stroke-width="1" /> <!-- 床墊紋理 --> <line x1="55" y1="160" x2="445" y2="160" stroke="#d9c8b4" stroke-width="0.5" opacity="0.6" /> <line x1="55" y1="185" x2="445" y2="185" stroke="#c9b9a9" stroke-width="0.5" opacity="0.6" /> <line x1="120" y1="145" x2="120" y2="205" stroke="#d9c8b4" stroke-width="0.5" opacity="0.4" /> <line x1="190" y1="145" x2="190" y2="205" stroke="#d9c8b4" stroke-width="0.5" opacity="0.4" /> <line x1="260" y1="145" x2="260" y2="205" stroke="#d9c8b4" stroke-width="0.5" opacity="0.4" /> <line x1="330" y1="145" x2="330" y2="205" stroke="#d9c8b4" stroke-width="0.5" opacity="0.4" /> <line x1="400" y1="145" x2="400" y2="205" stroke="#d9c8b4" stroke-width="0.5" opacity="0.4" /> <!-- 枕頭 --> <ellipse cx="95" cy="140" rx="35" ry="18" fill="#f5ede0" stroke="#e5d5c8" stroke-width="2" /> <ellipse cx="95" cy="135" rx="32" ry="12" fill="#faf7f3" opacity="0.7" /> <!-- 老奶奶頭部 --> <circle cx="105" cy="118" r="22" fill="#d4a878" stroke="#c4956a" stroke-width="2" /> <!-- 白髮 - 蓬鬆卷髮 --> <path d="M 82 105 Q 85 85 105 80 Q 125 85 128 105" fill="#e8e8e8" stroke="#d0d0d0" stroke-width="2" /> <!-- 髮卷紋理 --> <path d="M 90 95 Q 95 88 100 95" fill="none" stroke="#d5d5d5" stroke-width="1.5" opacity="0.6" /> <path d="M 110 95 Q 115 88 120 95" fill="none" stroke="#d5d5d5" stroke-width="1.5" opacity="0.6" /> <path d="M 85 100 Q 88 92 92 100" fill="none" stroke="#d5d5d5" stroke-width="1.5" opacity="0.6" /> <path d="M 118 100 Q 121 92 125 100" fill="none" stroke="#d5d5d5" stroke-width="1.5" opacity="0.6" /> <!-- 臉部 --> <ellipse cx="105" cy="122" rx="18" ry="17" fill="#d4a878" /> <!-- 眼睛 --> <circle cx="96" cy="118" r="2.5" fill="#2a2a2a" /> <circle cx="114" cy="118" r="2.5" fill="#2a2a2a" /> <!-- 眼白 --> <circle cx="96" cy="118" r="3.5" fill="none" stroke="#f0f0f0" stroke-width="0.5" /> <circle cx="114" cy="118" r="3.5" fill="none" stroke="#f0f0f0" stroke-width="0.5" /> <!-- 眉毛 - 細眉 --> <path d="M 91 113 Q 96 111 101 113" stroke="#7a6a4a" stroke-width="1.5" fill="none" stroke-linecap="round" /> <path d="M 109 113 Q 114 111 119 113" stroke="#7a6a4a" stroke-width="1.5" fill="none" stroke-linecap="round" /> <!-- 鼻子 --> <line x1="105" y1="118" x2="105" y2="125" stroke="#b89868" stroke-width="1.5" /> <!-- 嘴巴 - 微笑或安詳表情 --> <path d="M 100 130 Q 105 132 110 130" stroke="#8b5a3c" stroke-width="1.5" fill="none" stroke-linecap="round" /> <!-- 臉頰紅暈 --> <circle cx="87" cy="125" r="4" fill="#d97a7a" opacity="0.3" /> <circle cx="123" cy="125" r="4" fill="#d97a7a" opacity="0.3" /> <!-- 身體 - 躺著 --> <ellipse cx="180" cy="160" rx="60" ry="28" fill="#d4a878" stroke="#b88a5c" stroke-width="2" /> <!-- 左手 --> <g>
+         <rect x="70" y="158" width="14" height="50" fill="#d4a878" stroke="#b88a5c" stroke-width="1.5" rx="7" transform="rotate(-25 77 158)" />
+         <circle cx="60" cy="205" r="6" fill="#c49468" />
+        </g> <!-- 右手 --> <g>
+         <rect x="280" y="158" width="14" height="50" fill="#d4a878" stroke="#b88a5c" stroke-width="1.5" rx="7" transform="rotate(25 287 158)" />
+         <circle cx="298" cy="205" r="6" fill="#c49468" />
+        </g> <!-- 被子 - 更逼真 --> <ellipse cx="190" cy="185" rx="75" ry="40" fill="#b8d4e8" stroke="#8ab4d4" stroke-width="2" opacity="0.9" /> <path d="M 140 175 Q 130 170 125 180 Q 120 185 130 190 Q 145 188 155 185" fill="#a5c8dc" opacity="0.7" /> <path d="M 240 175 Q 250 170 255 180 Q 260 185 250 190 Q 235 188 225 185" fill="#a5c8dc" opacity="0.7" /> <!-- 點滴架 - 金屬支架 --> <g>
+         <line x1="380" y1="50" x2="380" y2="140" stroke="#707070" stroke-width="6" stroke-linecap="round" />
+         <circle cx="380" cy="48" r="6" fill="#888" /> <!-- 橫桿 -->
+         <line x1="360" y1="60" x2="400" y2="60" stroke="#707070" stroke-width="4" />
+        </g> <!-- 點滴液袋 --> <g>
+         <ellipse cx="380" cy="75" rx="16" ry="25" fill="#f0f0e0" stroke="#c9b8a8" stroke-width="2" />
+         <ellipse cx="380" cy="75" rx="12" ry="20" fill="#fffacd" opacity="0.6" /> <!-- 液體標記 -->
+         <line x1="375" y1="80" x2="385" y2="80" stroke="#ddd" stroke-width="1" />
+         <line x1="375" y1="90" x2="385" y2="90" stroke="#ddd" stroke-width="1" />
+        </g> <!-- 點滴管 - 透明管 --> <path d="M 380 100 Q 350 120 200 165" stroke="#a8d0e8" stroke-width="4" fill="none" stroke-linecap="round" opacity="0.8" /> <circle cx="198" cy="166" r="4" fill="#a8d0e8" /> <!-- NG管 - 從鼻子進入 --> <path d="M 110 123 Q 115 121 125 145" stroke="#ff9999" stroke-width="2.5" fill="none" stroke-linecap="round" /> <circle cx="112" cy="121" r="2" fill="#ff6666" /> <!-- NG管標籤 --> <rect x="50" y="45" width="110" height="28" fill="rgba(102, 126, 234, 0.12)" stroke="#667eea" stroke-width="1.5" rx="4" /> <text x="62" y="65" font-size="11" font-weight="bold" fill="#667eea">
+         NG tube
+        </text> <!-- 點滴標籤 --> <rect x="350" y="15" width="70" height="22" fill="rgba(168, 208, 232, 0.15)" stroke="#a8d0e8" stroke-width="1.5" rx="3" /> <text x="358" y="32" font-size="10" font-weight="600" fill="#6b8dba">
+         IV infusion
+        </text>
+       </svg>
+      </div>
+      <div class="character-container">
+       <div class="character" id="doctor-btn" data-character="doctor">
+        <div class="character-icon">
+         👨‍⚕️
+        </div>
+        <div class="character-name">
+         醫師
+        </div>
+        <div class="character-role">
+         Doctor
+        </div>
+       </div>
+       <div class="character" id="caregiver-btn" data-character="caregiver">
+        <div class="character-icon">
+         👩‍🦰
+        </div>
+        <div class="character-name">
+         照顧者
+        </div>
+        <div class="character-role">
+         Caregiver
+        </div>
+       </div>
+      </div>
+     </div><!-- 對話框 -->
+     <div class="dialogue-section">
+      <div class="dialogue-title">
+       💬 Dialogue
+      </div>
+      <div id="dialogue-log"></div>
+      <div class="response-options" id="response-options" style="display: none;"></div>
+     </div>
+    </div><!-- 右側：資訊面板 -->
+    <div class="info-section">
+     <div class="info-title">
+      📋 Patient Information
+     </div>
+     <div class="dropdown-group"><label class="dropdown-label">📝 Admission Note</label> <select id="admission-note-select"> <option value="">-- Select Admission Note Section --</option> </select>
+     </div>
+     <div class="dropdown-group"><label class="dropdown-label">🩺 Physical Examination</label> <select id="physical-exam-select"> <option value="">-- Select Physical Exam Date --</option> </select>
+     </div>
+     <div class="dropdown-group"><label class="dropdown-label">💊 History Medications</label> <select id="history-medications-select"> <option value="">-- Select Medication Source --</option> </select>
+     </div>
+     <div class="dropdown-group"><label class="dropdown-label">📋 Nursing Notes</label> <select id="nursing-notes-select"> <option value="">-- Select Nursing Record --</option> </select>
+     </div>
+     <div class="dropdown-group"><label class="dropdown-label">💊 Prescriptions</label> <select id="prescription-select"> <option value="">-- Select Prescription --</option> <option value="">（Content to be added）</option> </select>
+     </div>
+     <div class="dropdown-group"><label class="dropdown-label">🔬 Laboratory Values</label> <select id="lab-values-select"> <option value="">-- Select Test Category --</option> </select>
+     </div>
+     <div class="dropdown-group" style="margin-top: 15px; padding-top: 15px; border-top: 2px solid #e0e0e0;">
+      <div id="detail-display" class="empty-state">
+       選擇上方任一項目查看詳細資訊
+      </div>
+     </div>
+    </div>
+   </div><!-- 頁腳 -->
+   <div class="footer">
+    <div class="footer-title">
+     📜 License &amp; Attribution
+    </div>
+    <div class="footer-content"><strong>Attribution-NonCommercial-ShareAlike 4.0 International (CC BY-NC-SA 4.0)</strong><br><strong>Author:</strong> Shao-Yuan Hao<br><strong>Affiliation:</strong> Professor Chen Chung-Yu (陳崇鈺) Research Team, Kaohsiung Medical University<br><strong>Project:</strong> Pharmacist Clinical Training Simulator – Altered consciousness with dysphagia and NG tube<br><br>
+      This work is licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noopener noreferrer">Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License</a>.
+    </div>
+   </div>
+  </div>
+  <script>
+    // ============ 應用程序狀態 ============
+    const appState = {
+      currentCharacter: null,
+      currentDialogueIndex: 0,
+      dialogueHistory: [],
+      selectedPrescription: null,
+      selectedVitalSigns: null,
+      selectedLabValues: null,
+      doctorCompleted: false
+    };
+
+    // ============ 對話資料結構 ============
+    const dialogueData = {
+      doctor: {
+        name: 'Doctor',
+        role: 'Doctor',
+        conversations: [
+          {
+            question: 'Pharmacist, please assess whether the updated prescriptions from the holiday are suitable for nasogastric tube administration. Additionally, do we need to adjust medications due to the patient\'s delirium?',
+            responses: [
+              { 
+                text: 'Some medications are not suitable for tube administration and require formulation adjustments. I recommend enhancing sedatives to improve agitation.', 
+                feedback: '✓ Correct! You need to assess each medication\'s suitability for NG tube administration and consider adjusting medications for the patient\'s delirium symptoms.',
+                isCorrect: true
+              },
+              { 
+                text: 'All medications can be crushed directly for tube administration without any adjustments.', 
+                feedback: '✗ Incorrect. Some medications (such as extended-release formulations) should not be crushed, and delirium-related medications need to be evaluated.',
+                isCorrect: false
+              },
+              { 
+                text: 'I recommend stopping all psychiatric medications to reduce side effects.', 
+                feedback: '✗ Incorrect. You should assess the appropriateness of existing medications rather than abruptly discontinuing them.',
+                isCorrect: false
+              }
+            ]
+          },
+          {
+            question: 'Which of the following medications is LEAST suitable for crushing and nasogastric tube administration?',
+            responses: [
+              { 
+                text: 'A. Mesyrel® (Trazodone) 50 mg', 
+                feedback: '✗ Incorrect. Trazodone tablets can be crushed for NG tube administration.',
+                isCorrect: false,
+                letter: 'A'
+              },
+              { 
+                text: 'B. Sennapur® (Sennoside A+B)', 
+                feedback: '✗ Incorrect. Sennoside tablets can be crushed.',
+                isCorrect: false,
+                letter: 'B'
+              },
+              { 
+                text: 'C. Aricept Evess OD® 10 mg (Donepezil)', 
+                feedback: '✓ Correct! Aricept Evess OD is an orally disintegrating tablet (ODT) designed for dissolution on the tongue. It should NOT be crushed for NG tube use; instead, it can be dissolved in water or the regular tablet formulation should be used.',
+                isCorrect: true,
+                letter: 'C'
+              },
+              { 
+                text: 'D. Diovan 160mg/Tab (Valsartan)', 
+                feedback: '✗ Incorrect. Valsartan tablets can generally be crushed for NG tube administration.',
+                isCorrect: false,
+                letter: 'D'
+              }
+            ]
+          },
+          {
+            question: 'The patient has been using Benzodiazepines (BZDs) long-term. What is the PRIMARY risk of continued BZD use in this elderly patient?',
+            responses: [
+              { 
+                text: 'A. Hypoglycemia', 
+                feedback: '✗ Incorrect. BZDs do not typically cause hypoglycemia.',
+                isCorrect: false,
+                letter: 'A'
+              },
+              { 
+                text: 'B. QT prolongation', 
+                feedback: '✗ Incorrect. While some medications cause QT prolongation, BZDs are not primarily associated with this risk.',
+                isCorrect: false,
+                letter: 'B'
+              },
+              { 
+                text: 'C. Falls and delirium worsening', 
+                feedback: '✓ Correct! BZDs significantly increase fall risk and cognitive impairment, which are particularly dangerous in elderly patients with dementia. They also increase delirium risk and should be used cautiously or avoided in this patient.',
+                isCorrect: true,
+                letter: 'C'
+              },
+              { 
+                text: 'D. Constipation', 
+                feedback: '✗ Incorrect. While some medications can cause constipation, this is not the primary concern with long-term BZD use in elderly patients.',
+                isCorrect: false,
+                letter: 'D'
+              }
+            ]
+          },
+          {
+            question: 'Considering this patient\'s advanced age, CKD, and previous delirium episode, which medications may INCREASE the risk of recurrent delirium or falls? (Multiple choice)',
+            responses: [
+              { 
+                text: 'A. Alprazolam', 
+                feedback: '',
+                isCorrect: true,
+                isMultiple: true,
+                letter: 'A'
+              },
+              { 
+                text: 'B. Lorazepam', 
+                feedback: '',
+                isCorrect: true,
+                isMultiple: true,
+                letter: 'B'
+              },
+              { 
+                text: 'C. Trazodone', 
+                feedback: '',
+                isCorrect: true,
+                isMultiple: true,
+                letter: 'C'
+              },
+              { 
+                text: 'D. Haloperidol', 
+                feedback: '✗ Incorrect. While haloperidol has risks, you must select A, B, and C together for the correct answer. In this context, the primarily problematic medications are the BZDs (Alprazolam, Lorazepam) and Trazodone due to their CNS depressant effects and fall risk in elderly patients.',
+                isCorrect: false,
+                isMultiple: true,
+                letter: 'D'
+              }
+            ],
+            correctCombination: ['A', 'B', 'C'],
+            feedback: '✓ Correct! Alprazolam, Lorazepam (BZDs), and Trazodone all increase delirium and fall risk in elderly patients with CKD. These should be used with extreme caution or avoided.'
+          },
+          {
+            question: 'Regarding this patient\'s medication regimen, which of the following represent MEDICATION INTERACTIONS or BEERS CRITERIA CONCERNS that should be avoided or used with high caution? (Multiple choice)',
+            responses: [
+              { 
+                text: 'A. Long-term use of both alprazolam and lorazepam', 
+                feedback: '',
+                isCorrect: true,
+                isMultiple: true,
+                letter: 'A'
+              },
+              { 
+                text: 'B. Using trazodone as a sleep aid', 
+                feedback: '',
+                isCorrect: true,
+                isMultiple: true,
+                letter: 'B'
+              },
+              { 
+                text: 'C. Using haloperidol for acute delirium short-term management', 
+                feedback: '✗ Incorrect. You must select A, B, and D. Haloperidol can be appropriately used for acute delirium management in short-term situations, though it should be monitored carefully.',
+                isCorrect: false,
+                isMultiple: true,
+                letter: 'C'
+              },
+              { 
+                text: 'D. Concurrent use of multiple CNS depressants', 
+                feedback: '',
+                isCorrect: true,
+                isMultiple: true,
+                letter: 'D'
+              }
+            ],
+            correctCombination: ['A', 'B', 'D'],
+            feedback: '✓ Correct! Concurrent use of multiple BZDs, trazodone for sleep in elderly patients, and multiple CNS depressants all represent significant medication safety concerns that align with Beers Criteria and geriatric pharmacotherapy principles. Haloperidol can be used short-term for acute delirium with appropriate monitoring.'
+          },
+          {
+            question: 'Doctor: "Pharmacist, I noticed the family seems to be preparing something for the patient. Can you go check what they\'re doing? I\'ll be over after I finish reviewing the patient in the next bed."',
+            responses: [
+              { 
+                text: 'Understood! I\'ll go investigate immediately.', 
+                feedback: '✓ You head over to the patient\'s bedside to check on the family\'s activities...',
+                isCorrect: true,
+                transitionMessage: 'Please click the caregiver'
+              }
+            ]
+          }
+        ]
+      },
+      caregiver: {
+        name: 'Caregiver',
+        role: 'Family Member',
+        conversations: [
+          {
+            question: 'You arrive at the patient\'s bedside to check on the nasogastric tube feeding. You notice the family member is opening a brown herbal decoction labeled "養心湯" (Nourish Heart Decoction) and preparing to administer it via the tube. The family has not informed the medical team about this...',
+            responses: [
+              { 
+                text: 'A. Administering TCM and Western medications together via the tube should be fine.', 
+                feedback: '✗ Incorrect! Concurrent administration of TCM and Western medications requires careful evaluation for drug interactions, which could affect this patient\'s consciousness and safety. Please try again.',
+                isCorrect: false,
+                letter: 'A'
+              },
+              { 
+                text: 'B. Stop! I need to assess potential drug interactions first!', 
+                feedback: '✓ Correct! You must assess potential drug interactions between the TCM decoction and the patient\'s Western medications before allowing concurrent administration.',
+                isCorrect: true,
+                letter: 'B'
+              }
+            ]
+          },
+          {
+            question: 'The family shows you the herbal medicine package. The herbal components are: 黃耆 (Radix Astragali) 3g, 茯苓 (Poria) 3g, 茯神 (Poria spirit wood) 3g, 當歸 (Radix Angelicae) 3g, 川芎 (Rhizoma Ligustici) 3g, 半夏麴 (Rhizoma Pinelliae fermentatum) 3g, 炙甘草 (Radix Glycyrrhizae preparata) 1g, 柏子仁 (Semen Biotae) 2g, 酸棗仁 (Semen Ziziphi Spinosae) 2g, 五味子 (Fructus Schisandrae) 2g, 遠志 (Radix Polygalae) 2g, 人參 (Radix Ginseng) 2g, 肉桂 (Cortex Cinnamomi) 2g.\n\nThe family asks: "Can these herbal medicines be administered together with Western medications via the tube?"',
+            responses: [
+              { 
+                text: 'A. No drug interactions at all.', 
+                feedback: '✗ Incorrect. Several herbal components in this formula have potential interactions with the patient\'s current medications, especially regarding CNS effects. Please try again.',
+                isCorrect: false,
+                letter: 'A'
+              },
+              { 
+                text: 'B. Some herbs have interactions and could affect the patient\'s consciousness.', 
+                feedback: '✓ Correct! Several ingredients (especially 柏子仁, 酸棗仁, 遠志, and others with sedative properties) may interact with the patient\'s psychiatric medications and CNS depressants, potentially worsening delirium or consciousness state.',
+                isCorrect: true,
+                letter: 'B'
+              }
+            ]
+          },
+          {
+            question: 'Which of the following herbal components may affect this patient\'s consciousness state and increase the risk of drowsiness, agitation, or interactions with CNS medications? (Multiple choice)',
+            responses: [
+              { 
+                text: 'A. 柏子仁 (Semen Biotae)', 
+                feedback: '',
+                isCorrect: true,
+                isMultiple: true,
+                letter: 'A'
+              },
+              { 
+                text: 'B. 酸棗仁 (Semen Ziziphi Spinosae)', 
+                feedback: '',
+                isCorrect: true,
+                isMultiple: true,
+                letter: 'B'
+              },
+              { 
+                text: 'C. 遠志 (Radix Polygalae)', 
+                feedback: '',
+                isCorrect: true,
+                isMultiple: true,
+                letter: 'C'
+              },
+              { 
+                text: 'D. 半夏麴 (Rhizoma Pinelliae fermentatum)', 
+                feedback: '✗ Incorrect. You must select A, B, and C. While 半夏麴 has some properties, the primary CNS-affecting ingredients are 柏子仁, 酸棗仁, and 遠志, which have sedative and calming effects that interact with the patient\'s current psychiatric medications.',
+                isCorrect: false,
+                isMultiple: true,
+                letter: 'D'
+              }
+            ],
+            correctCombination: ['A', 'B', 'C'],
+            feedback: '✓ Correct! 柏子仁 (Semen Biotae), 酸棗仁 (Semen Ziziphi Spinosae), and 遠志 (Radix Polygalae) all have sedative and CNS-depressant properties that could potentiate the effects of the patient\'s current benzodiazepines, trazodone, and other CNS medications, increasing risk of deepened sedation, confusion, or worsening delirium.'
+          },
+          {
+            question: 'The "養心湯" (Nourish Heart Decoction) has been used for two weeks, and the family wishes to continue administering it via the nasogastric tube. As a pharmacist, how should you handle this situation?',
+            responses: [
+              { 
+                text: 'A. Continue administering the herbal decoction separately from Western medications with a 2-hour interval between doses.', 
+                feedback: '✗ Incorrect. Simple time separation does not address the underlying pharmacological interactions between these herbal components and the patient\'s medications. Please try again.',
+                isCorrect: false,
+                letter: 'A'
+              },
+              { 
+                text: 'B. Immediately discontinue all herbal medicines without explanation.', 
+                feedback: '✗ Incorrect. This approach lacks professional communication and patient-centered care. Instead, provide thorough assessment and clear recommendations. Please try again.',
+                isCorrect: false,
+                letter: 'B'
+              },
+              { 
+                text: 'C. After assessing the herbal components\' interactions with current medications, recommend temporary discontinuation or adjustment, and report to the physician for shared decision-making.', 
+                feedback: '✓ Correct! This is the appropriate professional response. You assess the interaction risk, provide a clear clinical recommendation based on pharmacological principles, and involve the physician in shared decision-making. This demonstrates best practice in medication safety and interprofessional collaboration.',
+                isCorrect: true,
+                letter: 'C'
+              },
+              { 
+                text: 'D. Allow the family to decide whether to continue the herbal medicine; pharmacists should not intervene in TCM matters.', 
+                feedback: '✗ Incorrect. As a pharmacist, you have a professional responsibility to assess medication interactions and safety, regardless of whether the medication is Western or traditional Chinese medicine. Please try again.',
+                isCorrect: false,
+                letter: 'D'
+              }
+            ]
+          },
+          {
+            question: 'The family understands and thanks you for your professional advice.\n\n---\n\n✅ You have completed this pharmacy consultation simulation!\n\nKey topics covered in this case:\n• Medication management in elderly patients with CKD\n• Assessment of medication suitability for nasogastric tube administration\n• Identification of TCM-Western medication interactions\n• Recognition of high-risk medications for delirium\n• Cross-cultural medical communication and family education',
+            responses: [
+              { 
+                text: '✓ Simulation Complete', 
+                feedback: '',
+                isCorrect: true
+              }
+            ]
+          }
+        ]
+      }
+    };
+
+    // ============ 患者資訊資料 ============
+    const patientData = {
+      admissionNote: [
+        {
+          id: 'general-data',
+          name: 'General Data',
+          details: `<strong>Contact History:</strong> None<br/>
+<strong>Travel History:</strong> Self / None, Family / None, Friends / None<br/>
+<strong>Symptoms:</strong> Fever<br/>
+<strong>Occupation:</strong> Homemaker<br/>
+<strong>Cluster History:</strong> None`
+        },
+        {
+          id: 'chief-complaint',
+          name: 'Chief Complaint',
+          details: `On admission (1/29), the patient presented with fever, dysuria (painful/burning urination), and hematuria (bloody urine), accompanied by impaired consciousness.`
+        },
+        {
+          id: 'present-illness',
+          name: 'Present Illness',
+          details: `A 94-year-old female with a medical history of hypertension, diabetes mellitus (DM), dementia, chronic kidney disease (CKD), and anxiety/panic disorder. The patient is long-term bedbound with an indwelling urinary catheter (Foley tube). According to her son, her dementia has worsened over the past two years, leading to an inability to swallow. Consequently, a nasogastric (NG) tube was placed by the home care team physician during a home visit last month.<br/><br/>
+The patient was admitted on January 29th presenting with fever, dysuria (burning sensation during urination), and hematuria. On February 1st, her consciousness slightly improved; however, she exhibited agitation, including shouting and flailing of limbs. The physician initiated treatment for suspected delirium with Haldol 5mg/1mL/Amp (Haloperidol) and subsequently consulted the clinical pharmacist for recommendations on additional appropriate mood-stabilizing medications.<br/><br/>
+Since the patient's psychiatric medications from an outside hospital were exhausted on January 30th, the medical team at KMUH (Kaohsiung Medical University Hospital) has performed a therapeutic substitution and re-prescribed the medications. On February 2nd, the pharmacist was requested to verify the suitability of the new prescriptions for crushing and administration via the NG tube.`
+        },
+        {
+          id: 'past-history',
+          name: 'Past History',
+          details: `• Hypertension<br/>
+• Type 2 Diabetes<br/>
+• Dementia<br/>
+• Chronic kidney disease<br/>
+• Panic disorder`
+        },
+        {
+          id: 'personal-history',
+          name: 'Personal History',
+          details: `Patient denies any drug allergies.<br/>
+<strong>Alcohol:</strong> Denied<br/>
+<strong>Smoking:</strong> Denied<br/>
+<strong>Betel nut:</strong> Denied`
+        },
+        {
+          id: 'family-history',
+          name: 'Family History',
+          details: `None (Unknown family history)`
+        }
+      ],
+      physicalExamination: [
+        {
+          id: 'pe-1-29',
+          name: 'Physical Exam (1/29)',
+          details: `<strong>Anthropometry:</strong> Height: 154 cm, Weight: 52 kg<br/><br/>
+<strong>Vital Signs (1/29):</strong><br/>
+T: 38℃ | P: 102/min | R: 20/min | BP: 152/88 mmHg | SpO₂: 95%<br/><br/>
+<strong>Chest:</strong> Bilateral symmetric expansion, no crackles, no wheezing<br/>
+<strong>Abdomen:</strong> Soft, mild suprapubic tenderness<br/>
+<strong>Extremities:</strong> No pitting edema<br/><br/>
+<strong>Neurological Examination:</strong><br/>
+GCS score: E3V3M5<br/>
+Pupil: 2.5/2.5, LR +/+<br/>
+EOM (eye movement): Free horizontal roving<br/>
+Doll eye: Preserved/Preserved<br/>
+Corneal reflex: +/+<br/>
+No facial asymmetry<br/>
+Nystagmus: Nil<br/>
+Verbal output: Confused, incomprehensible sounds<br/>
+Cough function: Preserved<br/>
+Muscle power: 4/5 over the left upper and lower extremities and 5/5 over the right side (consistent with residual deficits from prior stroke)<br/>
+Babinski sign: Bilateral no response<br/><br/>
+<strong>Equipment:</strong> NG tube: +, Foley tube: +`
+        },
+        {
+          id: 'pe-2-2',
+          name: 'Physical Exam (2/2)',
+          details: `<strong>Anthropometry:</strong> Height: 154 cm, Weight: 52 kg<br/><br/>
+<strong>Vital Signs (2/2):</strong><br/>
+T: 37.2℃ | P: 88/min | R: 18/min | BP: 140/82 mmHg | SpO₂: 96%<br/><br/>
+<strong>Chest:</strong> Bilateral symmetric expansion, no crackles, no wheezing<br/>
+<strong>Abdomen:</strong> Soft, no tenderness<br/>
+<strong>Extremities:</strong> No pitting edema<br/><br/>
+<strong>Neurological Examination:</strong><br/>
+GCS score: E4V4M6<br/>
+Pupil: 2.5/2.5, LR +/+<br/>
+EOM (eye movement): Free horizontal roving<br/>
+Doll eye: Preserved/Preserved<br/>
+Corneal reflex: +/+<br/>
+No facial asymmetry<br/>
+Nystagmus: Nil<br/>
+Verbal output: Incoherent shouting<br/>
+Cough function: Preserved<br/>
+Muscle power: 4/5 over the left upper and lower extremities and 5/5 over the right side (consistent with residual deficits from prior stroke)<br/>
+Babinski sign: Bilateral no response<br/><br/>
+<strong>Equipment:</strong> NG tube: +, Foley tube: -`
+        }
+      ],
+      historyMedications: [
+        {
+          id: 'med-other-hospital',
+          name: 'Other Hospitals (他院)',
+          details: `<strong>Psychiatric & Cognitive Medications:</strong><br/>
+• Alprazolam (Xanax XR 0.5mg/Tab): 1# QD<br/>
+• Lorazepam (Anxiedin 1mg/Tab): 1# QD<br/>
+• Trazodone (Mesyrel 50mg/Tab): 1# QD<br/>
+• Donepezil (Aricept Evess OD 100mg/Tab): 1# QD`
+        },
+        {
+          id: 'med-kaohsiung',
+          name: 'Kaohsiung Medical University Hospital (高醫)',
+          details: `<strong>Current Prescriptions:</strong><br/>
+• Valsartan (Diovan 160mg/Tab): 1# QD - Hypertension management<br/>
+• Metformin (Glucophage 500mg/Tab): 1# TID - Diabetes management<br/>
+• Sennoside A + B (Sennapur 12.5mg): 1# QD - Bowel function`
+        }
+      ],
+      nursingNotes: [
+        {
+          id: 'nursing-home-visit',
+          name: 'Nursing Record - Home Visit',
+          details: `<strong>Religious & Dietary Background:</strong><br/>
+The patient practices Taiwanese Taoism and has no specific dietary restrictions.<br/><br/>
+<strong>Family Structure:</strong><br/>
+• One son (age ~60) with a 2-year-old child<br/>
+• Two daughters (married, residing in other cities, visiting occasionally)<br/>
+• Primary caregivers: Son and daughter-in-law<br/><br/>
+<strong>Medication Administration Practices:</strong><br/>
+According to the nursing record from the last home visit, the patient's medications were being crushed together, dissolved in warm water, and administered via the NG tube.<br/><br/>
+<strong>Prior Counseling:</strong><br/>
+As no pharmacist was present during the home visit, the nurse provided verbal reminders to the family regarding proper medication administration.<br/><br/>
+<strong>Recommendation:</strong><br/>
+A pharmacist's thorough guidance and counseling on medication administration are required upon discharge to ensure safe and appropriate NG tube administration of medications.`
+        }
+      ],
+      prescriptions: [
+        {
+          id: 'current-medications',
+          name: 'Current Medications (Inpatient)',
+          details: `• Ceftriaxone Sandoz 2 g/vial: 0.5 vial, QD (1/29–2/2)<br/>
+• Acetaminophen 500 mg tablet: 1 tablet, PRN (1/29–2/2)<br/>
+• Diovan 160 mg tablet (valsartan): 1 tablet, QD (1/29–2/2)<br/>
+• Glucophage 500 mg tablet (metformin): 1 tablet, TID (1/29–2/2)<br/>
+• Sennapur 12.5 mg (sennoside A + B): 1 tablet, QDHS (1/29–2/2)<br/>
+• Xanax 0.25 mg tablet (alprazolam): 1 tablet, QDHS (1/29–2/2)<br/>
+• Lowen 0.5 mg tablet (lorazepam): 2 tablets, QDHS (1/29–2/2)<br/>
+• Mesyrel 50 mg tablet (trazodone): 1 tablet, QDHS (1/29–2/2)<br/>
+• Aricept Evess ODT 10 mg tablet (donepezil): 1 tablet, QDHS (1/29–2/2)<br/>
+• Pantoloc 40 mg vial (pantoprazole): 1 vial, QD (1/29–1/31)<br/>
+• Haldol 5 mg/1 mL amp (haloperidol): 1 ampule, ST (2/1)<br/>
+• Pariet 20 mg tablet (rabeprazole): 1 tablet, QD (2/1–2/4)`
+        }
+      ],
+      vitalSigns: [
+        { id: 'v1', name: '（生命徵象 1 待補充）', details: '（詳細資訊待補充）' },
+        { id: 'v2', name: '（生命徵象 2 待補充）', details: '（詳細資訊待補充）' }
+      ],
+      labValues: [
+        {
+          id: 'hematology',
+          name: 'Hematology',
+          details: `<table class="lab-table">
+            <thead>
+              <tr>
+                <th>Test</th>
+                <th>1/29</th>
+                <th>2/2</th>
+                <th>Normal Range</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="test-name">WBC</td>
+                <td class="abnormal">14.8 ×10³/µL</td>
+                <td class="normal">9.8 ×10³/µL</td>
+                <td>4.5-11.0</td>
+              </tr>
+              <tr>
+                <td class="test-name">RBC</td>
+                <td class="normal">3.52 million/µL</td>
+                <td class="normal">3.46 million/µL</td>
+                <td>3.5-5.5</td>
+              </tr>
+              <tr>
+                <td class="test-name">Hemoglobin (Hb)</td>
+                <td class="abnormal">10.6 g/dL</td>
+                <td class="abnormal">10.2 g/dL</td>
+                <td>12-16</td>
+              </tr>
+              <tr>
+                <td class="test-name">Hematocrit (Hct)</td>
+                <td class="abnormal">32.1 %</td>
+                <td class="abnormal">31.2 %</td>
+                <td>36-46</td>
+              </tr>
+              <tr>
+                <td class="test-name">Platelet (PLT)</td>
+                <td class="normal">238 ×10³/µL</td>
+                <td class="normal">226 ×10³/µL</td>
+                <td>150-400</td>
+              </tr>
+              <tr>
+                <td class="test-name">Segment (Neutrophil)</td>
+                <td class="abnormal">82 %</td>
+                <td class="normal">68 %</td>
+                <td>50-70</td>
+              </tr>
+              <tr>
+                <td class="test-name">Lymphocyte</td>
+                <td class="normal">10 %</td>
+                <td class="normal">20 %</td>
+                <td>20-40</td>
+              </tr>
+              <tr>
+                <td class="test-name">Monocyte</td>
+                <td class="normal">6 %</td>
+                <td class="normal">8 %</td>
+                <td>2-8</td>
+              </tr>
+              <tr>
+                <td class="test-name">Eosinophil</td>
+                <td class="normal">1 %</td>
+                <td class="normal">2 %</td>
+                <td>1-4</td>
+              </tr>
+              <tr>
+                <td class="test-name">Basophil</td>
+                <td class="normal">1 %</td>
+                <td class="normal">1 %</td>
+                <td>0-1</td>
+              </tr>
+            </tbody>
+          </table>`
+        },
+        {
+          id: 'biochemistry',
+          name: 'Biochemistry',
+          details: `<table class="lab-table">
+            <thead>
+              <tr>
+                <th>Test</th>
+                <th>1/29</th>
+                <th>2/2</th>
+                <th>Normal Range</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="test-name">Total Cholesterol</td>
+                <td class="normal">172 mg/dL</td>
+                <td class="normal">170 mg/dL</td>
+                <td>&lt;200</td>
+              </tr>
+              <tr>
+                <td class="test-name">Triglyceride</td>
+                <td class="normal">138 mg/dL</td>
+                <td class="normal">142 mg/dL</td>
+                <td>&lt;150</td>
+              </tr>
+              <tr>
+                <td class="test-name">HbA1c</td>
+                <td class="abnormal">7.8 %</td>
+                <td>-</td>
+                <td>&lt;7.0</td>
+              </tr>
+              <tr>
+                <td class="test-name">Uric Acid</td>
+                <td class="abnormal">7.6 mg/dL</td>
+                <td class="abnormal">7.3 mg/dL</td>
+                <td>3.5-7.2</td>
+              </tr>
+              <tr>
+                <td class="test-name">BUN</td>
+                <td class="abnormal">42 mg/dL</td>
+                <td class="abnormal">34 mg/dL</td>
+                <td>7-20</td>
+              </tr>
+              <tr>
+                <td class="test-name">Creatinine</td>
+                <td class="abnormal">1.5 mg/dL</td>
+                <td class="abnormal">1.4 mg/dL</td>
+                <td>0.7-1.3</td>
+              </tr>
+              <tr>
+                <td class="test-name">Estimated GFR</td>
+                <td class="abnormal">32 mL/min/1.73 m²</td>
+                <td class="abnormal">35 mL/min/1.73 m²</td>
+                <td>&gt;60</td>
+              </tr>
+              <tr>
+                <td class="test-name">AST/ALT</td>
+                <td class="normal">26/22 U/L</td>
+                <td class="normal">24/20 U/L</td>
+                <td>&lt;40</td>
+              </tr>
+              <tr>
+                <td class="test-name">Calcium</td>
+                <td class="abnormal">8.4 mg/dL</td>
+                <td class="normal">8.5 mg/dL</td>
+                <td>8.5-10.2</td>
+              </tr>
+              <tr>
+                <td class="test-name">Phosphate</td>
+                <td class="normal">4.6 mg/dL</td>
+                <td class="normal">4.3 mg/dL</td>
+                <td>2.5-4.5</td>
+              </tr>
+              <tr>
+                <td class="test-name">Sodium (Na)</td>
+                <td class="abnormal">133 mEq/L</td>
+                <td class="normal">135 mEq/L</td>
+                <td>136-145</td>
+              </tr>
+              <tr>
+                <td class="test-name">Potassium (K)</td>
+                <td class="normal">4.9 mEq/L</td>
+                <td class="normal">4.6 mEq/L</td>
+                <td>3.5-5.0</td>
+              </tr>
+              <tr>
+                <td class="test-name">Ammonia</td>
+                <td class="abnormal">42 µg/dL</td>
+                <td class="abnormal">40 µg/dL</td>
+                <td>19-35</td>
+              </tr>
+              <tr>
+                <td class="test-name">Albumin</td>
+                <td class="abnormal">3.1 g/dL</td>
+                <td class="abnormal">3.2 g/dL</td>
+                <td>3.5-5.5</td>
+              </tr>
+              <tr>
+                <td class="test-name">CRP</td>
+                <td class="abnormal">68 mg/L</td>
+                <td class="abnormal">22 mg/L</td>
+                <td>&lt;10</td>
+              </tr>
+              <tr>
+                <td class="test-name">Blood Glucose</td>
+                <td class="abnormal">218 mg/dL</td>
+                <td class="abnormal">176 mg/dL</td>
+                <td>70-100</td>
+              </tr>
+            </tbody>
+          </table>`
+        }
+      ]
+    };
+
+    // ============ 初始化函數 ============
+    function initializeApp() {
+      setupEventListeners();
+      populateSelects();
+    }
+
+    // ============ 事件監聽設置 ============
+    function setupEventListeners() {
+      // 人物角色按鈕
+      document.getElementById('doctor-btn').addEventListener('click', () => selectCharacter('doctor'));
+      document.getElementById('caregiver-btn').addEventListener('click', () => selectCharacter('caregiver'));
+
+      // 入院記錄下拉式清單
+      document.getElementById('admission-note-select').addEventListener('change', (e) => {
+        const selected = patientData.admissionNote.find(a => a.id === e.target.value);
+        displayDetail(selected);
+      });
+
+      // 理學檢查下拉式清單
+      document.getElementById('physical-exam-select').addEventListener('change', (e) => {
+        const selected = patientData.physicalExamination.find(p => p.id === e.target.value);
+        displayDetail(selected);
+      });
+
+      // 歷史用藥下拉式清單
+      document.getElementById('history-medications-select').addEventListener('change', (e) => {
+        const selected = patientData.historyMedications.find(m => m.id === e.target.value);
+        displayDetail(selected);
+      });
+
+      // 護理紀錄下拉式清單
+      document.getElementById('nursing-notes-select').addEventListener('change', (e) => {
+        const selected = patientData.nursingNotes.find(n => n.id === e.target.value);
+        displayDetail(selected);
+      });
+
+      // 資訊下拉式清單
+      document.getElementById('prescription-select').addEventListener('change', (e) => {
+        const selected = patientData.prescriptions.find(p => p.id === e.target.value);
+        displayDetail(selected);
+      });
+
+      document.getElementById('lab-values-select').addEventListener('change', (e) => {
+        const selected = patientData.labValues.find(l => l.id === e.target.value);
+        displayDetail(selected);
+      });
+    }
+
+    // ============ 填充下拉式清單 ============
+    function populateSelects() {
+      const admissionNoteSelect = document.getElementById('admission-note-select');
+      patientData.admissionNote.forEach(a => {
+        const option = document.createElement('option');
+        option.value = a.id;
+        option.textContent = a.name;
+        admissionNoteSelect.appendChild(option);
+      });
+
+      const physicalExamSelect = document.getElementById('physical-exam-select');
+      patientData.physicalExamination.forEach(p => {
+        const option = document.createElement('option');
+        option.value = p.id;
+        option.textContent = p.name;
+        physicalExamSelect.appendChild(option);
+      });
+
+      const historyMedicationsSelect = document.getElementById('history-medications-select');
+      patientData.historyMedications.forEach(m => {
+        const option = document.createElement('option');
+        option.value = m.id;
+        option.textContent = m.name;
+        historyMedicationsSelect.appendChild(option);
+      });
+
+      const nursingNotesSelect = document.getElementById('nursing-notes-select');
+      patientData.nursingNotes.forEach(n => {
+        const option = document.createElement('option');
+        option.value = n.id;
+        option.textContent = n.name;
+        nursingNotesSelect.appendChild(option);
+      });
+
+      const prescriptionSelect = document.getElementById('prescription-select');
+      patientData.prescriptions.forEach(p => {
+        const option = document.createElement('option');
+        option.value = p.id;
+        option.textContent = p.name;
+        prescriptionSelect.appendChild(option);
+      });
+
+      const labValuesSelect = document.getElementById('lab-values-select');
+      patientData.labValues.forEach(l => {
+        const option = document.createElement('option');
+        option.value = l.id;
+        option.textContent = l.name;
+        labValuesSelect.appendChild(option);
+      });
+    }
+
+    // ============ 顯示詳細資訊 ============
+    function displayDetail(item) {
+      const detailDisplay = document.getElementById('detail-display');
+      if (item) {
+        detailDisplay.innerHTML = `<strong>${item.name}</strong><br/>${item.details}`;
+        detailDisplay.classList.remove('empty-state');
+      } else {
+        detailDisplay.innerHTML = '選擇上方任一項目查看詳細資訊';
+        detailDisplay.classList.add('empty-state');
+      }
+    }
+
+    // ============ 選擇人物角色 ============
+    function selectCharacter(character) {
+      // Check if caregiver is selected without completing doctor's dialogue
+      if (character === 'caregiver' && !appState.doctorCompleted) {
+        // Show caregiver's redirect message
+        document.getElementById('caregiver-btn').classList.add('active');
+        document.getElementById('doctor-btn').classList.remove('active');
+        document.getElementById('dialogue-log').innerHTML = '';
+        showMessage('Please consult with the Doctor first to understand the patient\'s condition. Come find me after you\'ve finished speaking with the Doctor!', 'caregiver');
+        document.getElementById('response-options').style.display = 'none';
+        return;
+      }
+
+      appState.currentCharacter = character;
+      appState.currentDialogueIndex = 0;
+      appState.dialogueHistory = [];
+
+      // 更新 UI
+      document.getElementById('doctor-btn').classList.remove('active');
+      document.getElementById('caregiver-btn').classList.remove('active');
+      document.getElementById(character === 'doctor' ? 'doctor-btn' : 'caregiver-btn').classList.add('active');
+
+      // 開始對話
+      startDialogue();
+    }
+
+    // ============ 開始對話 ============
+    function startDialogue() {
+      const character = dialogueData[appState.currentCharacter];
+      const conversation = character.conversations[appState.currentDialogueIndex];
+
+      if (!conversation) {
+        showMessage('對話已結束', 'system');
+        return;
+      }
+
+      // 顯示問題
+      showMessage(conversation.question, appState.currentCharacter);
+
+      // 顯示回應選項
+      displayResponseOptions(conversation.responses);
+    }
+
+    // ============ 顯示訊息 ============
+    function showMessage(message, speaker) {
+      const dialogueLog = document.getElementById('dialogue-log');
+
+      // 清空空狀態
+      if (dialogueLog.querySelector('.empty-state')) {
+        dialogueLog.innerHTML = '';
+      }
+
+      const messageDiv = document.createElement('div');
+      messageDiv.className = 'dialogue-box';
+
+      const speakerName = speaker === 'system' ? 'System' : dialogueData[speaker]?.name || speaker;
+      messageDiv.innerHTML = `
+        <div class="dialogue-speaker">${speakerName}</div>
+        <div class="dialogue-text">${message}</div>
+      `;
+
+      dialogueLog.appendChild(messageDiv);
+      dialogueLog.scrollTop = dialogueLog.scrollHeight;
+
+      appState.dialogueHistory.push({ speaker: speakerName, message });
+    }
+
+    // ============ 顯示回應選項 ============
+    function displayResponseOptions(responses) {
+      const responseOptions = document.getElementById('response-options');
+      responseOptions.innerHTML = '';
+
+      const conversation = dialogueData[appState.currentCharacter].conversations[appState.currentDialogueIndex];
+      const isMultiple = conversation.correctCombination !== undefined;
+
+      if (isMultiple) {
+        // Multiple choice mode
+        const selectedChoices = new Set();
+        
+        responses.forEach((response, index) => {
+          const btn = document.createElement('button');
+          btn.className = 'response-btn';
+          btn.textContent = response.text;
+          btn.dataset.letter = response.letter;
+          btn.style.opacity = '0.6';
+          
+          btn.addEventListener('click', () => {
+            if (selectedChoices.has(response.letter)) {
+              selectedChoices.delete(response.letter);
+              btn.style.opacity = '0.6';
+            } else {
+              selectedChoices.add(response.letter);
+              btn.style.opacity = '1';
+            }
+          });
+          
+          responseOptions.appendChild(btn);
+        });
+
+        // Add submit button
+        const submitBtn = document.createElement('button');
+        submitBtn.textContent = 'Submit Answer';
+        submitBtn.className = 'response-btn';
+        submitBtn.style.background = '#764ba2';
+        submitBtn.style.marginTop = '10px';
+        submitBtn.addEventListener('click', () => {
+          handleMultipleChoiceResponse(selectedChoices, conversation, responses);
+        });
+        responseOptions.appendChild(submitBtn);
+      } else {
+        // Single choice mode
+        responses.forEach((response, index) => {
+          const btn = document.createElement('button');
+          btn.className = 'response-btn';
+          btn.textContent = response.text;
+          btn.addEventListener('click', () => handleResponse(response, index));
+          responseOptions.appendChild(btn);
+        });
+      }
+
+      responseOptions.style.display = 'flex';
+    }
+
+    // ============ 處理回應 ============
+    function handleResponse(response, index) {
+      // 顯示玩家的回應
+      showMessage(response.text, 'player');
+
+      // 顯示反饋（如果有）
+      if (response.feedback) {
+        setTimeout(() => showMessage(response.feedback, 'system'), 500);
+      }
+
+      document.getElementById('response-options').style.display = 'none';
+
+      // 如果答案正確，清空紀錄並移至下一個對話；如果錯誤，重新提問
+      if (response.isCorrect) {
+        setTimeout(() => {
+          // 檢查是否有過渡訊息（用於銜接角色轉換）
+          if (response.transitionMessage) {
+            showMessage(response.transitionMessage, 'system');
+            // Mark doctor dialogue as completed
+            if (appState.currentCharacter === 'doctor') {
+              appState.doctorCompleted = true;
+            }
+            // 清空對話但保留過渡訊息，等待玩家點擊新角色
+            setTimeout(() => {
+              document.getElementById('response-options').style.display = 'none';
+            }, 1000);
+          } else {
+            // 正常進行下一題
+            appState.currentDialogueIndex++;
+            appState.dialogueHistory = [];
+            document.getElementById('dialogue-log').innerHTML = '';
+            startDialogue();
+          }
+        }, 1500);
+      } else {
+        // 答錯則在 5 秒後清空所有對話紀錄，重新提問相同問題
+        setTimeout(() => {
+          appState.dialogueHistory = [];
+          document.getElementById('dialogue-log').innerHTML = '';
+          const character = dialogueData[appState.currentCharacter];
+          const conversation = character.conversations[appState.currentDialogueIndex];
+          showMessage(conversation.question, appState.currentCharacter);
+          displayResponseOptions(conversation.responses);
+        }, 5000);
+      }
+    }
+
+    // ============ 處理複選題回應 ============
+    function handleMultipleChoiceResponse(selectedChoices, conversation, responses) {
+      const selectedArray = Array.from(selectedChoices).sort();
+      const correctArray = conversation.correctCombination.sort();
+      const isCorrect = selectedArray.length === correctArray.length && 
+                        selectedArray.every((val, idx) => val === correctArray[idx]);
+
+      // 顯示玩家的選擇
+      const choiceText = selectedArray.length > 0 ? selectedArray.join(', ') : '(No selection)';
+      showMessage(`I select: ${choiceText}`, 'player');
+
+      // 顯示反饋
+      if (isCorrect) {
+        setTimeout(() => showMessage(conversation.feedback, 'system'), 500);
+      } else {
+        // Find the first incorrect choice feedback
+        const selectedSet = selectedChoices;
+        let feedbackMsg = '';
+        for (const response of responses) {
+          if (selectedSet.has(response.letter) && !response.isCorrect) {
+            feedbackMsg = response.feedback;
+            break;
+          }
+          if (!selectedSet.has(response.letter) && response.isCorrect) {
+            feedbackMsg = response.feedback;
+            break;
+          }
+        }
+        if (!feedbackMsg) {
+          feedbackMsg = '✗ Incorrect. Please try again.';
+        }
+        setTimeout(() => showMessage(feedbackMsg, 'system'), 500);
+      }
+
+      document.getElementById('response-options').style.display = 'none';
+
+      if (isCorrect) {
+        // 答對則清空紀錄並進入下一題
+        setTimeout(() => {
+          appState.currentDialogueIndex++;
+          appState.dialogueHistory = [];
+          document.getElementById('dialogue-log').innerHTML = '';
+          startDialogue();
+        }, 1500);
+      } else {
+        // 答錯則在 5 秒後清空對話紀錄，重新提問
+        setTimeout(() => {
+          appState.dialogueHistory = [];
+          document.getElementById('dialogue-log').innerHTML = '';
+          showMessage(conversation.question, appState.currentCharacter);
+          displayResponseOptions(conversation.responses);
+        }, 5000);
+      }
+    }
+
+    // ============ 初始化應用 ============
+    initializeApp();
+  </script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9e141e3fe0e8f1ec',t:'MTc3NDMzODk3NS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
